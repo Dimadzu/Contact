@@ -3,7 +3,7 @@ import Container from "@material-ui/core/Container";
 import Typography from "@material-ui/core/Typography";
 import { makeStyles, createStyles, formatMs } from "@material-ui/core/styles";
 import { useEffect, useState } from "react";
-import { useContacts } from "./useContacts";
+
 import { ContactsTable } from "../contactsTable/index";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import ViewListIcon from "@material-ui/icons/ViewList";
@@ -36,14 +36,40 @@ const initionalDataViewMod = () => {
 };
 
 export const Contacts = () => {
+  const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
   const classes = useStyles();
-  const contacts = useContacts();
   const [dataViewMod, setDataViewMod] = useState(initionalDataViewMod());
   const [page, setPage] = useState(1);
 
+  //функция для подключения к серверу
+  useEffect(() => {
+    const getContacts = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          "https://randomuser.me/api/?results=200" &&
+            `https://randomuser.me/api/?page=${page}&results=10&seed=abc`
+        );
+        const { results, error } = await response.json();
+        setData(results);
+        console.log(results);
+
+        if (error) {
+          throw new Error(error);
+        }
+      } catch (e) {
+        setIsError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    getContacts();
+  }, [page]);
+
   const handleChangePage = (_, pageNumber) => {
     setPage(pageNumber);
-    console.log(page);
   };
 
   const handleChangeViewMod = (_, nextView) => {
@@ -84,14 +110,14 @@ export const Contacts = () => {
         </Grid>
         <Grid item xs={12}>
           {(() => {
-            if (contacts.isLoading) {
+            if (isLoading) {
               return <CircularProgress className={classes.loader} />;
             }
-            if (contacts.isError) {
+            if (isError) {
               return <div>isError</div>;
             }
             if (dataViewMod === DATA_VIEW_MOD.TABLE) {
-              return <ContactsTable data={contacts.data} />;
+              return <ContactsTable data={data} />;
             }
             if (dataViewMod === DATA_VIEW_MOD.GRID) {
               return "Grid";
